@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Agent Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chatbot-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .chat-header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            text-align: right;
+        }
+
+        .user-message .bubble {
+            background: #4f46e5;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 18px 18px 4px 18px;
+            display: inline-block;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .bot-message .bubble {
+            background: white;
+            color: #1f2937;
+            padding: 12px 16px;
+            border-radius: 18px 18px 18px 4px;
+            display: inline-block;
+            max-width: 85%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            white-space: pre-line;
+        }
+
+        .quick-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-btn {
+            background: #e5e7eb;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #4f46e5;
+        }
+
+        .send-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .send-btn:hover {
+            background: #3730a3;
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px 18px 18px 4px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.5s infinite;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.3s; }
+        .dot:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .news-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .news-link:hover {
+            text-decoration: underline;
+        }
+
+        .debug-info {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .raw-response {
+            background: #1f2937;
+            color: #f9fafb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="chatbot-container">
+        <div class="chat-header">
+            <h1>🤖 AI News Agent</h1>
+            <p>Get personalized news updates powered by AI</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="bubble">
+                    Hello! I'm your AI News Agent. I can get you the latest news on any topic you're interested in. Try asking me about:
+                </div>
+                <div class="quick-buttons">
+                    <button class="quick-btn" onclick="sendQuickMessage('AI technology news')">🤖 AI Tech</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('sports news India')">⚽ Sports</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('business news')">💼 Business</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('latest breaking news')">📰 Breaking</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="input-field" 
+                    id="messageInput" 
+                    placeholder="Ask me about any news topic..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">📤</button>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Your n8n webhook URL (production URL - no 'test' in the path)
+        const N8N_WEBHOOK_URL = 'https://rsmtechdev.app.n8n.cloud/webhook/news-agent';
+        
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function addMessage(content, isUser = false, showRawResponse = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'bubble';
+            bubbleDiv.innerHTML = content;
+            
+            messageDiv.appendChild(bubbleDiv);
+            
+            // Add raw response if provided (for debugging)
+            if (showRawResponse) {
+                const rawDiv = document.createElement('div');
+                rawDiv.className = 'raw-response';
+                rawDiv.textContent = JSON.stringify(showRawResponse, null, 2);
+                messageDiv.appendChild(rawDiv);
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            typingIndicator.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            sendBtn.disabled = loading;
+            messageInput.disabled = loading;
+            if (loading) {
+                showTyping();
+            } else {
+                hideTyping();
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            setTimeout(() => {
+                errorMessage.textContent = '';
+            }, 5000);
+        }
+
+        async function callNewsAPI(query) {
+            try {
+                console.log('Calling n8n webhook with query:', query);
+                
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query }),
+                    mode: 'cors'
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Raw response data:', data);
+                
+                return data;
+            } catch (error) {
+                console.error('API Error details:', error);
+                
+                // Check if it's a CORS error
+                if (error.message.includes('CORS') || error.message.includes('fetch')) {
+                    throw new Error('Connection blocked by browser security. Please check n8n CORS settings.');
+                }
+                
+                throw error;
+            }
+        }
+
+        function formatNewsResponse(apiResponse, query) {
+            console.log('Formatting response:', apiResponse);
+            
+            // Check if we have actual articles
+            if (apiResponse.articles && apiResponse.articles.length > 0) {
+                let response = `📰 **Latest News: ${query}**\n\n`;
+                response += `Found ${apiResponse.totalFound || apiResponse.articles.length} articles:\n\n`;
+                
+                apiResponse.articles.forEach((article, index) => {
+                    response += `**${index + 1}. ${article.title}**\n`;
+                    if (article.description) {
+                        response += `${article.description.substring(0, 200)}...\n`;
+                    }
+                    if (article.link) {
+                        response += `🔗 <a href="${article.link}" target="_blank" class="news-link">Read full article</a>\n`;
+                    }
+                    if (article.pubDate) {
+                        response += `📅 ${new Date(article.pubDate).toLocaleDateString()}\n\n`;
+                    }
+                });
+                
+                return response;
+            }
+            
+            // Check if we have an AI response (even if it's a template)
+            if (apiResponse.aiResponse) {
+                let response = `🤖 **AI Analysis for: ${query}**\n\n`;
+                
+                // Check if it's the template response
+                if (apiResponse.aiResponse.includes('[Insert Article Title Here')) {
+                    response += `⚠️ **Template Response Detected**\n\n`;
+                    response += `It looks like your n8n workflow is returning a template response instead of actual news data. This means:\n\n`;
+                    response += `1. The news fetching step might not be working properly\n`;
+                    response += `2. The Google News RSS feed might not be returning data\n`;
+                    response += `3. The AI analysis step is receiving empty or placeholder data\n\n`;
+                    response += `**To fix this, check your n8n workflow:**\n`;
+                    response += `- Verify the RSS feed URL is correct\n`;
+                    response += `- Check if the RSS parser is working\n`;
+                    response += `- Ensure data is flowing between nodes\n\n`;
+                    response += `**Raw API Response:**\n`;
+                    
+                    return { message: response, showRaw: apiResponse };
+                } else {
+                    // Real AI response
+                    response += apiResponse.aiResponse;
+                    return { message: response };
+                }
+            }
+            
+            // Fallback for no data
+            return { 
+                message: `❌ **No News Found for: ${query}**\n\nSorry, I couldn't find any recent news for that topic. This could be because:\n\n• The search term was too specific\n• No recent articles match your query\n• There's an issue with the news feed\n\nTry a different search term or check back later!`,
+                showRaw: apiResponse
+            };
+        }
+
+        async function sendMessage() {
+            const query = messageInput.value.trim();
+            if (!query) return;
+
+            // Add user message
+            addMessage(query, true);
+            messageInput.value = '';
+            
+            setLoading(true);
+            
+            try {
+                console.log('Sending query:', query);
+                const response = await callNewsAPI(query);
+                
+                console.log('Received response:', response);
+                const formattedResponse = formatNewsResponse(response, query);
+                
+                if (typeof formattedResponse === 'object') {
+                    // Response with raw data
+                    addMessage(formattedResponse.message, false, formattedResponse.showRaw);
+                } else {
+                    // Simple string response
+                    addMessage(formattedResponse);
+                }
+                
+            } catch (error) {
+                console.error('Error in sendMessage:', error);
+                const errorMsg = `❌ **Error Fetching News**\n\n${error.message}\n\nPlease try again or contact support if the problem persists.`;
+                addMessage(errorMsg);
+                showError('Failed to fetch news. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Focus on input when page loads
+        window.addEventListener('load', () => {
+            messageInput.focus();
+        });
+
+        // Show welcome message
+        setTimeout(() => {
+            addMessage(`🚀 **AI News Agent Ready!**\n\nI'm connected to your n8n workflow and can help you with:\n\n• **Real-time news fetching** from Google News\n• **AI-powered analysis** of current events\n• **Smart summaries** of trending topics\n\n💡 **Tips:**\n- Try specific queries like "Tesla stock news" or "climate change updates"\n- Ask for analysis: "What's happening in tech today?"\n- Request summaries: "Summarize today's business news"\n\n**Current Status:** ${N8N_WEBHOOK_URL.includes('test') ? '🧪 Test Mode' : '🟢 Production Mode'}\n\nJust type your request and I'll fetch the latest news!`);
+        }, 1000);
+    </script>
+</body>
+</html>
